@@ -64,7 +64,7 @@ jobs:
             git fetch origin
             git checkout $ENV
             git reset --hard origin/$ENV
-            git clean -fdn # Dry run to show what would be removed
+            git clean -fd
 
             echo "Updating .env file from $ENV variables and secrets"
             printf '%s\n' \
