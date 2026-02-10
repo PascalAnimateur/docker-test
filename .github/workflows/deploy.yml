@@ -34,12 +34,17 @@ jobs:
           mkdir -p ~/.ssh
           ssh-keyscan -H ${{ vars.SSH_HOST }} >> ~/.ssh/known_hosts
 
-      - name: Build Docker image
-        run: |
-          docker build \
-            -t $IMAGE_NAME:$ENV \
-            -t $IMAGE_NAME:${{ github.sha }} \
-            .
+      - name: Build Docker image (cached)
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          push: false
+          tags: |
+            ${{ env.IMAGE_NAME}}:${{ env.ENV}}
+            ${{ env.IMAGE_NAME }}:${{ github.sha }}
+          load: true
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
 
       - name: Push Docker image
         run: |
