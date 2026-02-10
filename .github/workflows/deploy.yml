@@ -48,8 +48,8 @@ jobs:
 
       - name: Push Docker image
         run: |
-          docker save $IMAGE_NAME:$ENV | \
-          ssh ${{ vars.SSH_USER }}@${{ vars.SSH_HOST }} "docker load"
+          docker save $IMAGE_NAME:$ENV | zstd -T0 -3 \
+          ssh ${{ vars.SSH_USER }}@${{ vars.SSH_HOST }} "zstd -d | docker load"
 
       - name: Deploy on server
         run: |
