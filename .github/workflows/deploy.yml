@@ -59,9 +59,10 @@ jobs:
             git clean -fdn # Dry run to show what would be removed
 
             echo "Updating .env file from $ENV variables and secrets"
-            cat > .env << EOL
-            ENV=$ENV
-            EOL
+            printf '%s\n' \
+              ENV=$ENV \
+              MESSAGE="Deployed by GitHub Actions" \
+              > .env
 
             echo "Restarting Docker for $ENV"
             docker compose up -d --remove-orphans
