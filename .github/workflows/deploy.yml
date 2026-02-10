@@ -66,7 +66,7 @@ jobs:
             echo "Updating .env file from $ENV variables and secrets"
             printf '%s\n' \
               ENV=$ENV \
-              MESSAGE="Deployed by GitHub Actions" \
+              MESSAGE=\"Deployed by GitHub Actions\" \
               > .env
 
             echo "Restarting Docker for $ENV"
