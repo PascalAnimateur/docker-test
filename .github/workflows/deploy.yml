@@ -1,0 +1,69 @@
+name: Deploy to server
+
+on:
+  push:
+    branches:
+      - staging
+      - production
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    environment: ${{ github.ref_name }}
+
+    env:
+      ENV: ${{ github.ref_name }}
+      IMAGE_NAME: test
+      PROJECT_PATH: ${{ vars.PROJECT_PATH }}
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Set SSH
+        uses: webfactory/ssh-agent@v0.9.0
+        with:
+          ssh-private-key: ${{ secrets.SSH_PRIVATE_KEY }}
+
+      - name: Setup known_hosts
+        run: |
+          mkdir -p ~/.ssh
+          ssh-keyscan -H ${{ vars.SSH_HOST }} >> ~/.ssh/known_hosts
+
+      - name: Build Docker image
+        run: |
+          docker build \
+            -t $IMAGE_NAME:$ENV \
+            -t $IMAGE_NAME:${{ github.sha }} \
+            .
+
+      - name: Push Docker image
+        run: |
+          docker save $IMAGE_NAME:$ENV | \
+          ssh ${{ vars.SSH_USER }}@${{ vars.SSH_HOST }} "docker load"
+
+      - name: Deploy on server
+        run: |
+          ssh ${{ vars.SSH_USER }}@${{ vars.SSH_HOST }} << EOF
+            set -e
+            cd $PROJECT_PATH
+
+            echo "Synchronizing repository to $ENV in $PROJECT_PATH"
+            git fetch origin
+            git checkout $ENV
+            git reset --hard origin/$ENV
+            git clean -fdn # Dry run to show what would be removed
+
+            echo "Updating .env file from $ENV variables and secrets"
+            cat > .env << EOL
+            ENV=$ENV
+            EOL
+
+            echo "Restarting Docker for $ENV"
+            docker compose up -d --remove-orphans
+            docker image prune -f
+          EOF
